@@ -1,1 +1,1 @@
-# ImageProcessingSuite
+ImageProcessingSuite is a JavaScript module designed to efficiently fetch images from specified URLs and save them locally to a `data/` directory. Leveraging the `axios` library for HTTP requests and the `fs` module for file system operations, this suite offers an easy-to-use solution for image handling and storage. This tool is ideal for developers looking for a streamlined way to manage image data within JavaScript projects.
