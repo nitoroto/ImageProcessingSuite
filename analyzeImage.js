@@ -6,53 +6,56 @@ dotenv.config();
 const EDGE_THRESHOLD = process.env.EDGE_THRESHOLD || 100;
 const COLOR_THRESHOLD = process.env.COLOR_THRESHOLD || 50;
 
-const toGrayScale = async (imagePath) => {
+const processImage = async (imagePath) => {
   try {
+    // Read the image once
     const image = await cv.imreadAsync(imagePath);
+    // Convert to grayscale for edge detection
     const grayImage = await image.bgrToGrayAsync();
-    return grayImage;
+
+    // Edge Detection
+    await detectEdges(grayImage);
+    // Release the gray image memory right after it's no longer needed
+    grayImage.delete();
+
+    // Color Identification (no need to re-read the image)
+    await identifyColors(image);
+
+    // For pattern recognition, if you're analyzing the original image, 
+    // there's no need to read it again so you would pass the `image` object directly,
+    // but since there's no implementation shown, it's commented out.
+    // await recognizePatterns(image);
+
+    // Eventually, release the original image memory when all processing is done
+    image.delete();
+
   } catch (err) {
-    console.error('Failed to convert to grayscale:', err);
+    console.error('Image processing failed:', err);
   }
 };
 
 const detectEdges = async (grayImage) => {
   try {
+    // Perform edge detection directly on the provided grayImage
     const edgeDetectedImage = await grayImage.cannyAsync(EDGE_THRESHOLD, EDGE_THRESHOLD * 2);
-    return edgeDetectedImage;
+    edgeDetectedInfo.delete();
   } catch (err) {
     console.error('Failed to detect edges:', err);
   }
 };
 
-const identifyColors = async (imagePath) => {
+const identifyColors = async (image) => {
   try {
-    const image = await cv.imreadAsync(imagePath);
+    // Here we assume the operation allows using the original image
     const mask = await image.inRangeAsync(new cv.Vec3(0, 0, 0), new cv.Vec3(COLOR_THRESHOLD, COLOR_THRESHOLD, COLOR_THRESHOLD));
-    return mask;
+    // If you're done with the mask, delete it to free memory
+    mask.delete();
   } catch (err) {
     console.error('Failed to identify colors:', err);
   }
 };
 
-const recognizePatterns = async (imagePath) => {
-  try {
-    const image = await cv.imreadAsync(imagePath);
-    return image;
-  } catch (err) {
-    console.error('Failed to recognize patterns:', err);
-  }
-};
+// Assuming recognizePatterns will work directly on the image
+// const recognizePatterns = async (image) => {...};
 
-const runAnalysis = async (imagePath) => {
-  try {
-    const grayImage = await toGrayScale(imagePath);
-    await detectEdges(grayImage);
-    await identifyColors(imagePath);
-    await recognizePatterns(imagePath);
-  } catch (err) {
-    console.error('Image analysis failed:', err);
-  }
-};
-
-runAnalysis('path/to/image.jpg');
+processImage('path/to/image.jpg');
