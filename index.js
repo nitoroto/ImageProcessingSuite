@@ -1,21 +1,21 @@
 require('dotenv').config();
 
-const { fetchImage } = require('./fetchImage.js');
-const { processImage } = require('./processImage.js');
-const { analyzeImage } = require('./analyzeImage.js');
+const { downloadImage } = require('./fetchImage.js');
+const { enhanceImage } = require('./processImage.js');
+const { evaluateImageContent } = require('./analyzeImage.js');
 
-async function main() {
+async function mainWorkflow() {
   try {
-    const imagePath = await fetchImage(process.env.IMAGE_URL);
+    const originalImagePath = await downloadImage(process.env.IMAGE_URL);
     
-    const processedImagePath = await processImage(imagePath);
+    const enhancedImagePath = await enhanceImage(originalImagePath);
     
-    const analysisResults = await analyzeImage(processedImagePath);
+    const imageAnalysisResults = await evaluateImageContent(enhancedImagePath);
     
-    console.log(analysisResults);
+    console.log(imageAnalysisResults);
   } catch (error) {
-    console.error('Error in main workflow: ', error);
+    console.error('Error in the main image processing workflow: ', error);
   }
 }
 
-main();
+mainWorkflow();
