@@ -4,41 +4,40 @@ const { downloadImage } = require('./fetchImage.js');
 const { enhanceImage } = require('./processImage.js');
 const { evaluateImageContent } = require('./analyzeImage.js');
 
-// Simple Cache object for storing results
-const cache = {
-  enhancedImages: new Map(),
-  analyzedImages: new Map()
-};
-
-async function enhanceImageWithCache(originalImagePath) {
-  if (cache.enhancedImages.has(originalImagePath)) {
-    console.log('Enhanced image fetched from cache');
-    return cache.enhancedImages.get(originalImagePath);
+class ImageCache {
+  constructor() {
+    this.enhancedImages = new Map();
+    this.analyzedImages = new Map();
   }
-  const enhancedImagePath = await enhanceImage(originalImagePath);
-  cache.enhancedImages.set(originalImagePath, enhancedImagePath);
-  return enhancedImagePath;
-}
 
-async function evaluateImageContentWithCache(imagePath) {
-  if (cache.analyzedImages.has(imagePath)) {
-    console.log('Image analysis fetched from cache');
-    return cache.analyzedImages.get(imagePath);
+  async getCachedOrEnhance(imagePath) {
+    if (this.enhancedImages.has(imagePath)) {
+      console.log('Enhanced image fetched from cache');
+      return this.enhancedImages.get(imagePath);
+    }
+    const enhancedImagePath = await enhanceImage(imagePath);
+    this.enhancedImages.set(imagePath, enhancedImagePath);
+    return enhancedImagePath;
   }
-  const imageAnalysisResults = await evaluateImageContent(imagePath);
-  cache.analyzedImages.set(imagePath, imageAnalysisResults);
-  return imageAnalysisResults;
+
+  async getCachedOrAnalyze(imagePath) {
+    if (this.analyzedImages.has(imagePath)) {
+      console.log('Image analysis fetched from cache');
+      return this.analyzedImages.get(imagePath);
+    }
+    const analysisResults = await evaluateImageContent(imagePath);
+    this.analyzedImages.set(imagePath, analysisResults);
+    return analysisResults;
+  }
 }
 
 async function mainWorkflow() {
   try {
+    const imageCache = new ImageCache();
     const originalImagePath = await downloadImage(process.env.IMAGE_URL);
     
-    // Use caching mechanism for enhancing images
-    const enhancedImagePath = await enhanceImageWithCache(originalImagePath);
-    
-    // Use caching mechanism for image analysis
-    const imageAnalysisResults = await evaluateImageContentWithCache(enhancedImagePath);
+    const enhancedImagePath = await imageCache.getCachedOrEnhance(originalImagePath);
+    const imageAnalysisResults = await imageCache.getCachedOrAnalyze(enhancedImagePath);
     
     console.log(imageAnalysisResults);
   } catch (error) {
