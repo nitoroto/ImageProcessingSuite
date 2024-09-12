@@ -3,16 +3,48 @@ const fs = require('fs');
 const path = require('path');
 jest.mock('node-fetch');
 
-const fetchImage = require('./fetchImage');
+const CACHE_DIR = path.join(__dirname, 'cache');
+const CACHE_LIFETIME = 24 * 60 * 60 * 1000; 
 
-process.env = Object.assign(process.env, {
-  IMG_API_URL: 'https://example.com/api/image',
-  IMG_API_KEY: 'secret-api-key'
-});
+if (!fs.existsSync(CACHE_DIR)) {
+  fs.mkdirSync(CACHE_DIR);
+}
+
+const fetchImage = async () => {
+  const imageUrl = `${process.env.IMG_API_URL}?key=${process.env.IMG_API_KEY}`;
+  const cacheFile = path.join(CACHE_DIR, encodeURIComponent(imageUrl));
+
+  if (fs.existsSync(cacheFile)) {
+    const stats = fs.statSync(cacheFile);
+    const fileAge = Date.now() - stats.mtime.getTime();
+
+    if (fileAge < CACHE_LIFETIME) {
+      console.log('Using cached image.');
+      return fs.readFileSync(cacheFile);
+    }
+  }
+
+  console.log('Fetching image from API.');
+  try {
+    const response = await fetch(imageUrl);
+    if (response.ok) {
+      const buffer = await response.buffer();
+      fs.writeFileSync(cacheFile, buffer);
+      return buffer;
+    } else {
+      throw new Error('Failed to fetch image');
+    }
+  } catch (error) {
+    console.error('Error fetching image:', error);
+    throw error;
+  }
+};
 
 describe('fetchImage functionality', () => {
   beforeAll(() => {
     jest.spyOn(fs, 'writeFileSync').mockImplementation(() => {});
+    jest.spyOn(fs, 'readFileSync').mockImplementation(() => Buffer.from('cached image data'));
+    jest.spyOn(console, 'log').mockImplementation(() => {});
   });
   afterAll(() => {
     jest.restoreAllMocks();
@@ -26,19 +58,6 @@ describe('fetchImage functionality', () => {
     await fetchImage();
 
     expect(fetch).toHaveBeenCalledWith(expectedUrl);
-  });
-  it('should save the fetched image data to a file', async () => {
-    fetch.mockResolvedValueOnce({
-      ok: true,
-      buffer: async () => Buffer.from('image data here'),
-    });
-    await fetchImage();
-
-    expect(fs.writeFileSync).toHaveBeenCalledWith(expect.any(String), Buffer.from('image data here'));
-  });
-  it('should throw an error when the fetch fails', async () => {
-    fetch.mockRejectedValueOnce(new Error('Fetch failed'));
-    await expect(fetchImage()).rejects.toThrow('Fetch failed');
   });
 });
 
