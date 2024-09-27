@@ -2,26 +2,35 @@ const processImage = require('./processImage');
 const fs = require('fs');
 const path = require('path');
 require('dotenv').config();
+
 describe('Image Processing Tests', () => {
-  let testImagePath;
+  let pathToTestImage;
+  
   beforeAll(() => {
-    testImagePath = path.join(__dirname, 'testImage.jpg');
-    if (!fs.existsSync(testImagePath)) {
-      fs.writeFileSync(testImagePath, 'This is a mock image file.');
+    pathToTestImage = path.join(__dirname, 'testImage.jpg');
+    
+    if (!fs.existsSync(pathToTestImage)) {
+      fs.writeFileSync(pathToTestImage, 'This is a mock image file.');
     }
   });
+  
   afterAll(() => {
-    if (fs.existsSync(testImagePath)) {
-      fs.unlinkSync(testImagePath);
+    if (fs.existsSync(pathToTestImage)) {
+      fs.unlinkSync(pathToTestImage);
     }
   });
+  
   test('should process an image successfully', async () => {
-    const result = await processImage(testImagePath);
-    expect(result).toHaveProperty('success');
-    expect(result).toHaveProperty('processedImagePath');
-    expect(result.success).toBe(true);
+    const processingResult = await processImage(pathToTestImage);
+    
+    expect(processingResult).toHaveProperty('success');
+    expect(processingResult).toHaveProperty('processedImagePath');
+    expect(processingResult.success).toBe(true);
   });
-  test('should fail gracefully on missing image', async () => {
-    await expect(processImage('path/that/does/not/exist.jpg')).rejects.toThrow();
+  
+  test('should handle non-existent image path gracefully', async () => {
+    const nonexistentImagePath = 'path/to/nonexistent/image.jpg';
+    
+    await expect(processImage(nonexistentImagePath)).rejects.toThrow();
   });
 });
